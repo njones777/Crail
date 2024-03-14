@@ -142,6 +142,11 @@ int EncryptBytes(FILE *input_file, FILE* output_file) {
 }
 
 //Decrypt encrypted file
+int DecryptBytes(FILE *input_file, FILE* output_file, FILE* Key_File){
+    
+
+    return 0;
+}
 
 
 

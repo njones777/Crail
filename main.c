@@ -5,9 +5,13 @@
 
 
 int main(int argc, char *argv[]) {
-    FILE *plain_text_file;
-    FILE *encrypted_file;
-    FILE *Key_File;
+    FILE *plain_text_file;          //Acts as input file for encryption and for decryption it acts as an output file
+    FILE *encrypted_file;           //Acts as output file for encryption and for encryption it acts as the input file
+    FILE *Key_File;                 //Key file is only provided for decryption, the file is generated for the user in encryption
+    char *plain_text_file_name;     //Name of plain text file
+    char *encrypted_file_name;      //Name of encrypted file
+    char *Key_File_name;            //Name of key file
+    char *mode;                     //Holds mode for program
 
     if(argc < 2){
         printf("Usage: ./crail [OPTION] ... [INPUT_FILE] [OUTPUT_FILE]\n");
@@ -19,7 +23,7 @@ int main(int argc, char *argv[]) {
     }
     
     for (int i=1; i<argc; i++){
-        //Check for help menu
+        //Check for help menu option(s)
         if(strcmp(argv[i], "help")==0 || strcmp(argv[i], "-h")==0, strcmp(argv[i], "--help")==0){
             printf("Usage: ./crail [OPTION] ... [INPUT_FILE] [OUTPUT_FILE]\n");
             printf("Rail fence block cipher with pseudo-random rail key generation\n");
@@ -29,13 +33,62 @@ int main(int argc, char *argv[]) {
             printf(" -o, --output\t\t\t specifies the outputf file of the resulting encryption or decryption\n");
             break;
         }
-
-
         //Check mode(Decrypt or encrypt)
         if (strcmp(argv[i], "-m") == 0){
-            if (strcmp(argv[i+1], "d") == 0)
+            if (strcmp(argv[i+1], "d") == 0){
+                mode="d";
+            }
+            if (strcmp(argv[i+1], "e") == 0){
+                mode="e";
+            }
+            i++;    //Skip next argument as we expect the next argument to be the modes flag option
+        }
+        //Check for input file
+        if (strcmp(argv[i], "-i"==0) || strcmp(argv[i], "--input") ==0){
+            //For decrypt mode input file will be encrypted file
+            if(mode == "d"){
+                encrypted_file_name = argv[i+1];
+            }
+            //For encyrpt mode input file will be the plaintext file 
+            if(mode == "e"){
+                plain_text_file_name = argv[i+1];
+                
+            }
+            //increment i as the next value should be the input file name 
             i++;
         }
+
+        //Check for output file 
+        if (strcmp(argv[i], "-o"==0)|| strcmp(argv[i], "--output") ==0){
+             //For decrypt mode output file will be plaintext file
+            if(mode == "d"){
+                plain_text_file = argv[i+1];
+
+            }
+            //For encyrpt mode output file will be the encrypted file 
+            if(mode == "e"){
+                encrypted_file_name = argv[i+1];
+                
+            }
+            //increment i as the next value should be the output file name 
+            i++;
+        }
+        //Unrecognized command was found
+        else{
+            printf("crail: unrecognized %s",argv[i]);
+            printf("Try 'crail --help' for more information");
+        }
+
+
+        //Open provided Files
+
+        if(mode == "d"){
+            plain_text_file = fopen(plain_text_file_name, "r");
+            if (plain_text_file == NULL){printf("Unable to open %s\n", plain_text_file_name); return 1;}
+        }
+      
+
+
     }
 
 
