@@ -1,7 +1,5 @@
 #ifndef RailFence_H
 #define RailFence_H
-//#include "RailUtils.h"
-
 
 // Function to encrypt an array of integers using Rail Fence Cipher
 void rfc(int *array, int size, int rails, int *encryptedArray) {
@@ -52,7 +50,6 @@ void rfc(int *array, int size, int rails, int *encryptedArray) {
         }
     }
 }
-
 
 // Function to decrypt an array of integers using Rail Fence Cipher
 void rfc_decrypt(int *encryptedArray, int size, int rails, int *decryptedArray) {

@@ -5,6 +5,7 @@
 
 
 int main(int argc, char *argv[]) {
+    /*
     FILE *plain_text_file;          //Acts as input file for encryption and for decryption it acts as an output file
     FILE *encrypted_file;           //Acts as output file for encryption and for encryption it acts as the input file
     FILE *Key_File;                 //Key file is only provided for decryption, the file is generated for the user in encryption
@@ -19,7 +20,8 @@ int main(int argc, char *argv[]) {
         printf("\nMandatory Requirements\n");
         printf(" -m, --mode [e || d]\t\t specifies e for encryption or d for decryption\n");
         printf(" -i, --input\t\t\t specifies the input file for encryption or decryption\n");
-        printf(" -o, --output\t\t\t specifies the outputf file of the resulting encryption or decryption\n");
+        printf(" -o, --output\t\t\t specifies the output file of the resulting encryption or decryption\n");
+        printf(" -k, --keyfile\t\t\t specifies key file for decryption, and can also optionally be used to specify key file name to output from encryption ");
     }
     
     for (int i=1; i<argc; i++){
@@ -31,6 +33,8 @@ int main(int argc, char *argv[]) {
             printf(" -m, --mode [e || d]\t\t specifies e for encryption or d for decryption\n");
             printf(" -i, --input\t\t\t specifies the input file for encryption or decryption\n");
             printf(" -o, --output\t\t\t specifies the outputf file of the resulting encryption or decryption\n");
+            printf(" -k, --keyfile\t\t\t specifies key file for decryption, and can also optionally be used to specify key file name to output from encryption ");
+
             break;
         }
         //Check mode(Decrypt or encrypt)
@@ -78,15 +82,68 @@ int main(int argc, char *argv[]) {
             printf("crail: unrecognized %s",argv[i]);
             printf("Try 'crail --help' for more information");
         }
-
+        
 
         //Open provided Files
 
         if(mode == "d"){
-            plain_text_file = fopen(plain_text_file_name, "r");
-            if (plain_text_file == NULL){printf("Unable to open %s\n", plain_text_file_name); return 1;}
+            //Open encryped/input file in read binary mode 
+            encrypted_file = fopen(encrypted_file_name, "rb");
+            if (encrypted_file == NULL){printf("Unable to open %s, Check permission and or current directory\n", encrypted_file_name); return 1;}
+
+            //Open plain text/output file in write binary mode
+            plain_text_file = fopen(plain_text_file_name, "wb");
+            if (encrypted_file == NULL){printf("Unable to open %s, Check permission and or current directory\n", plain_text_file_name); return 1;}
+
+            //Open Key file in read mode to peform decryption
+            Key_File = fopen(Key_File_name, "r");
+            if (encrypted_file == NULL){printf("Unable to open %s, Check permission and or current directory\n", Key_File_name); return 1;}
+
+
+
         }
-      
+        if (mode == "e"){
+              //Open encryped/output file in write binary mode 
+            encrypted_file = fopen(encrypted_file_name, "wb");
+            if (encrypted_file == NULL){printf("Unable to open %s, Check permission and or current directory\n", encrypted_file_name); return 1;}
+
+            //Open plain text/input file in read binary mode
+            plain_text_file = fopen(plain_text_file_name, "rb");
+            if (encrypted_file == NULL){printf("Unable to open %s, Check permission and or current directory\n", plain_text_file_name); return 1;}
+
+            //Open Key file in write mode
+            Key_File = fopen(Key_File_name, "w");
+            if (encrypted_file == NULL){printf("Unable to open %s, Check permission and or current directory\n", Key_File_name); return 1;}
+
+        }
+
+
+
+        //Cleanup open files
+        fclose(encrypted_file); fclose(plain_text_file); fclose(Key_File);
+        */
+        
+        //Decrypt Image Test
+        FILE *output_file = fopen("plain.png", "wb");
+        FILE *input_file = fopen("encrypted_image.png", "rb");
+        FILE *key_file = fopen("Key.crfc", "r");
+        if (key_file == NULL){
+            perror("Error opening file");
+        }
+        int status = DecryptBytes(input_file, output_file, key_file);
+        
+        //Encrypt Image Test
+        //FILE *input_file = fopen("image_test.png", "rb");
+        //FILE *output_file = fopen("encrypted_image.png", "wb");
+        //int status = EncryptBytes(input_file, output_file);
+        
+       
+       
+       
+       
+       
+        return 0;
+
 
 
     }
@@ -139,7 +196,6 @@ int main(int argc, char *argv[]) {
     }
     */
    
-}
 
 /*
  FILE *output = fopen("encrypted_test.txt", "wb");

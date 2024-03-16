@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
-
 // Trouble Shooting Print Functions
 void printArray(int *array, int size) {
     for (int i = 0; i < size; i++) {
@@ -143,7 +141,37 @@ int EncryptBytes(FILE *input_file, FILE* output_file) {
 
 //Decrypt encrypted file
 int DecryptBytes(FILE *input_file, FILE* output_file, FILE* Key_File){
-    
+    unsigned char Encrypted_byte;
+    int Encrypted_BitArray[8];
+    unsigned char byte;
+    int Key_Rail_Num;
+    int bitArray[8];
+
+    while(1){
+         //Retrieve Byte to decrypt
+        unsigned char Encrypted_byte = fgetc(input_file);
+        
+        //Check if we are at the end of the file
+        if(feof(input_file)){break;}
+
+        //Retrieve number of rails from key file
+        if(fscanf(Key_File, "%d", &Key_Rail_Num) != 1){
+            perror("Error reading key file for decryption");
+            break;
+        }
+
+        //convert the byte to a bit array
+        byteToBitArray(Encrypted_byte, Encrypted_BitArray);
+
+        //encrypt bit array
+        rfc_decrypt(Encrypted_BitArray, 8, Key_Rail_Num, bitArray);
+
+        //Convert and write encyrpted byte to array
+        byte = bitArrayToByte(bitArray);
+        writeByteToFile(output_file, byte);
+        
+    }
+
 
     return 0;
 }
