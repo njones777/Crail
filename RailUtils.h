@@ -91,7 +91,7 @@ unsigned char* Generate_Rail_Key(long ByteCount){
 }
 
 // Goes through process of encrypting each byte from file
-int EncryptBytes(FILE *input_file, FILE* output_file) {
+void EncryptBytes(FILE *input_file, FILE* output_file) {
     unsigned char Plain_Text_Byte;  //Plain text byte from input file
     unsigned char Encrypted_Byte;   //Encrypted Byte to write to output file
     const char* Key_File_Name;      //File name holding rail key numbers
@@ -99,17 +99,13 @@ int EncryptBytes(FILE *input_file, FILE* output_file) {
     int Plain_Text_Bit_Array[8];    //Plain text bits
     int Encrypted_Bit_Array[8];     //Encrypted bits
     int Rail_Key_Number;            //Rail number to encrypt current bit array
-    //long ByteCount;               //Number of bytes from plain text file
-
-    //Retrieve number of bytes from input file
-    //ByteCount = numBytes(input_file);
 
     //Generate Key from number of bytes
     Key_File_Name = Generate_Rail_Key(numBytes(input_file));
 
     //Open Key file
     Key_File = fopen(Key_File_Name, "r");
-    if (Key_File == NULL){printf("Unable to open %s\n",Key_File_Name); return -1;}
+    if (Key_File == NULL){perror("Error Reading Key File");}
 
     //Loop through input file to encrypt 
     while(1){
@@ -122,8 +118,7 @@ int EncryptBytes(FILE *input_file, FILE* output_file) {
 
         //Retrieve Rail number from Key File
          if(fscanf(Key_File, "%d", &Rail_Key_Number) != 1){
-            printf("Error Reading %s\n",Key_File);
-            return -1;
+           perror("Error reading key file for encryption");
         }
 
         // Convert the byte to a bit array
@@ -136,11 +131,10 @@ int EncryptBytes(FILE *input_file, FILE* output_file) {
         Encrypted_Byte = bitArrayToByte(Encrypted_Bit_Array);
         writeByteToFile(output_file, Encrypted_Byte);
     }
-    return 0;
 }
 
 //Decrypt encrypted file
-int DecryptBytes(FILE *input_file, FILE* output_file, FILE* Key_File){
+void DecryptBytes(FILE *input_file, FILE* output_file, FILE* Key_File){
     unsigned char Encrypted_byte;
     int Encrypted_BitArray[8];
     unsigned char byte;
@@ -171,15 +165,5 @@ int DecryptBytes(FILE *input_file, FILE* output_file, FILE* Key_File){
         writeByteToFile(output_file, byte);
         
     }
-
-
-    return 0;
 }
-
-
-
-
-
-
-
 #endif
