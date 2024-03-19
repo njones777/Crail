@@ -6,6 +6,22 @@
 
 
 int main(int argc, char *argv[]) {
+
+
+
+    /*FILE *input = fopen("test_files/text_test.txt", "r");
+    FILE *output = fopen("test_files/text_encrypt_test.txt", "w");
+    EncryptBytes(input, output, 2);*/
+
+    
+    FILE *output = fopen("test_files/decrypt_text_test.txt", "w");
+    FILE *input = fopen("test_files/text_encrypt_test.txt", "r");
+    FILE *key = fopen("Key.crfc", "r");
+    DecryptBytes(input, output, key, 2);
+
+    
+
+    /*
     FILE *plain_text_file;          //Acts as input file for encryption and for decryption it acts as an output file
     FILE *encrypted_file;           //Acts as output file for encryption and for encryption it acts as the input file
     FILE *Key_File;                 //Key file is only provided for decryption, the file is generated for the user in encryption
@@ -156,7 +172,7 @@ int main(int argc, char *argv[]) {
             if (encrypted_file == NULL){printf("Unable to open input file: %s, Check permission and or current directory\n", plain_text_file_name); return 1;}
 
             //Check if a key file name was passed
-            /*
+            
             COMMENT OUT
             CUSTOM KEY OUTPUT, MAYBE IMPLEMENT LATER
             if(Key_File_name == NULL){
@@ -168,7 +184,7 @@ int main(int argc, char *argv[]) {
                 EncryptBytes(plain_text_file, encrypted_file, Key_File_name);
             }
             END COMMENT
-            */
+            
 
             //Start File Encryption
             EncryptBytes(plain_text_file, encrypted_file);
@@ -177,6 +193,7 @@ int main(int argc, char *argv[]) {
             fclose(encrypted_file); fclose(plain_text_file);
         
         }
+        */
             
     return 0;
 }
