@@ -1,35 +1,31 @@
 #include "RailFence.h"
 #include "RailUtils.h"
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <unistd.h>
 
 
 int main(int argc, char *argv[]) {
-
-
-
     /*FILE *input = fopen("test_files/text_test.txt", "r");
     FILE *output = fopen("test_files/text_encrypt_test.txt", "w");
     EncryptBytes(input, output, 2);*/
-
-    
+    /*
     FILE *output = fopen("test_files/decrypt_text_test.txt", "w");
     FILE *input = fopen("test_files/text_encrypt_test.txt", "r");
     FILE *key = fopen("Key.crfc", "r");
-    DecryptBytes(input, output, key, 2);
-
+    DecryptBytes(input, output, key, 2);*/
     
-
-    /*
-    FILE *plain_text_file;          //Acts as input file for encryption and for decryption it acts as an output file
-    FILE *encrypted_file;           //Acts as output file for encryption and for encryption it acts as the input file
-    FILE *Key_File;                 //Key file is only provided for decryption, the file is generated for the user in encryption
-    char *plain_text_file_name=NULL;     //Name of plain text file
-    char *encrypted_file_name=NULL;      //Name of encrypted file
-    char *Key_File_name=NULL;            //Name of key file
-    char mode='\0';                     //Holds mode for program
-
+    FILE *plain_text_file;              //Acts as input file for encryption and for decryption it acts as an output file
+    FILE *encrypted_file;               //Acts as output file for encryption and for encryption it acts as the input file
+    FILE *Key_File;                     //Key file is only provided for decryption, the file is generated for the user in encryption
+    char *plain_text_file_name=NULL;    //Name of plain text file
+    char *encrypted_file_name=NULL;     //Name of encrypted file
+    char *Key_File_name=NULL;           //Name of key file
+    int slice_size = 1;                 //Upper bound for byte generation
+    char mode='\0';                     //Encryption or Decryption
+    
     if(argc < 2){
         printf("Usage: ./crail [OPTION] ... [INPUT_FILE] [OUTPUT_FILE]\n");
         printf("Rail fence block cipher with pseudo-random rail key generation\n");
@@ -37,6 +33,7 @@ int main(int argc, char *argv[]) {
         printf(" -i, --input\t\t\t specifies the input file for encryption or decryption\n");
         printf(" -o, --output\t\t\t specifies the output file of the resulting encryption or decryption\n");
         printf(" -k, --keyfile\t\t\t specifies key file for decryption, and can also optionally be used to specify key file name to output from encryption\n\n");
+        printf(" -s, --slice\t\t\t Specify byte slice size, Must be less than total number of bytes for input file, Default is 1\n");
     }
     
     for (int i=1; i<argc; i++){
@@ -45,10 +42,11 @@ int main(int argc, char *argv[]) {
             printf("Usage: ./crail [OPTION] ... [INPUT_FILE] [OUTPUT_FILE]\n");
             printf("Rail fence block cipher with pseudo-random rail key generation\n");
             printf("\nMandatory Requirements\n");
-
             printf(" -i, --input\t\t\t specifies the input file for encryption or decryption\n");
             printf(" -o, --output\t\t\t specifies the outputf file of the resulting encryption or decryption\n");
             printf(" -k, --keyfile\t\t\t specifies key file for decryption, and can also optionally be used to specify key file name to output from encryption\n\n");
+            printf(" -s, --slice\t\t\t Specify byte slice size, Must be less than total number of bytes for input file, Default is 1\n");
+
             break;
         }
         //Check Decrypt or Encrypt mode
@@ -114,18 +112,30 @@ int main(int argc, char *argv[]) {
             }
             continue;   //Skip to next iteration in loop
         }
+
+        // Check for slice size
+        if (strcmp(argv[i], "-s") == 0 || strcmp(argv[i], "--slice") == 0) {
+            if (i + 1 < argc) {
+                slice_size = atoi(argv[i + 1]);
+                i+=1;  // Skip next argument as it's the key file name
+            } else {
+                printf("Missing slice size.\n");
+                return 1;
+            }
+            continue;   //Skip to next iteration in loop
+        }
         //Unrecognized command was found
         else {
             printf("crail: unrecognized argument: %s, ", argv[i]);
             printf("Try 'crail --help' for more information\n");
-            //return 1;
+            return 1;
         }
     }
         
         //Open provided Files
         if(mode == 'd'){
             char input[10];
-            printf("Decrypting %s into %s using key file %s\n", encrypted_file_name, plain_text_file_name, Key_File_name);
+            printf("Decrypting %s into %s using key file %s with a slice size of %d\n", encrypted_file_name, plain_text_file_name, Key_File_name, slice_size);
             printf("Do you want to proceed (Y/N):");
             fgets(input, sizeof(input), stdin);
 
@@ -152,49 +162,53 @@ int main(int argc, char *argv[]) {
             if (encrypted_file == NULL){printf("Unable to open %s, Check permission and or current directory\n", Key_File_name); return 1;}
 
             //Start File Decryption
-            DecryptBytes(encrypted_file, plain_text_file, Key_File);
+            //Check for slice size
+            if (slice_size != 1){
+            DecryptBytes(encrypted_file, plain_text_file, Key_File, 2);
+            }
+            else{DecryptBytes(encrypted_file, plain_text_file, Key_File, 1);}
 
             //Close open files
             fclose(encrypted_file); fclose(plain_text_file); fclose(Key_File);
-
-            
+ 
             return 0;
 
         }
 
         if (mode == 'e'){
-              //Open encryped/output file in write binary mode 
+            char input[10];
+            printf("Encrypting %s into %s using key file %s with a slice size of %d\n",plain_text_file_name, encrypted_file_name, Key_File_name, slice_size);
+            printf("Do you want to proceed (Y/N):");
+            fgets(input, sizeof(input), stdin);
+
+            for(int i =0; input[i]; i++){
+                input[i] = tolower(input[i]);
+            }
+
+            //Check for yes or no in input
+            if (strcmp(input, "y\n") == 0 || strcmp(input, "yes\n")==0 || strcmp(input, "Y\n")==0){printf("Proceeding...\n");}
+            else if (strcmp(input, "n\n") == 0 || strcmp(input, "no\n") == 0){printf("Exiting...\n"); exit(0);}
+            else {printf("Invalid confirmation input, Exiting...\n");exit(0);}
+
+            //Open encryped/output file in write binary mode 
             encrypted_file = fopen(encrypted_file_name, "wb");
             if (encrypted_file == NULL){printf("Unable to open output file: %s, Check permission and or current directory\n", encrypted_file_name); return 1;}
-
             //Open plain text/input file in read binary mode
             plain_text_file = fopen(plain_text_file_name, "rb");
             if (encrypted_file == NULL){printf("Unable to open input file: %s, Check permission and or current directory\n", plain_text_file_name); return 1;}
-
-            //Check if a key file name was passed
-            
-            COMMENT OUT
-            CUSTOM KEY OUTPUT, MAYBE IMPLEMENT LATER
-            if(Key_File_name == NULL){
-                //If user did not provide a key file name then it will be given the default name "Key.crfc"
-                EncryptBytes(plain_text_file, encrypted_file, NULL);
-            }
-            else{
-                Key_File = fopen(Key_File_name, "w");
-                EncryptBytes(plain_text_file, encrypted_file, Key_File_name);
-            }
-            END COMMENT
-            
+  
 
             //Start File Encryption
-            EncryptBytes(plain_text_file, encrypted_file);
+            //Check if a slice size grater than 1 was specified to change Byte mode
+            if(slice_size > 1){
+                EncryptBytes(plain_text_file, encrypted_file, 2, slice_size);
+            }
+            else if (slice_size == 1){EncryptBytes(plain_text_file, encrypted_file, 1, 1);}
 
             //Close Open Files
             fclose(encrypted_file); fclose(plain_text_file);
-        
         }
-        */
-            
+              
     return 0;
 }
 

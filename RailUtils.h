@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <unistd.h>
+
 // Trouble Shooting Print Functions
 void printArray(int *array, int size) {
     for (int i = 0; i < size; i++) {
@@ -96,18 +98,6 @@ void bytesToBitArray(char *bytes, int bytesize, int *bitArray, int bitsize) {
     }
 }
 
-
-
-
-
-
-
-//write single byte to file
-/*
-void writeByteToFile(FILE *file, char byte) {
-    fputc(byte, file);
-}*/
-
 long numBytes(FILE *file){
     
     long numBytes;
@@ -137,29 +127,33 @@ long numBytes(FILE *file){
 //Generate Key file from the number of bytes within the file to encrypt
 //1 for single byte mode 2-20 for multi-byte mode
 char* Generate_Rail_Key(long ByteCount, int range, int mode){
-    FILE *Key_File = fopen("Key.crfc", "w");
-    int RandomByteSlice;
-    srand(time(NULL));
+    //printf("Range is %d\nMode is %d\n", range, mode);
+    FILE *Key_File = fopen("Key.crfc", "w+");
     if (Key_File == NULL){
         fprintf(stderr, "File not found or cannot open\n");
     }
+    int RandomByteSlice;
+
+    //Set set for random generation
+    srand(time(NULL));
+    
 
     if (mode == 1){
         for(long i=0; i<ByteCount; i++){
             fprintf(Key_File, "%d ", (1 + rand() % (8 - 1 + 1)));
         }
     }
-    else if (mode ==2){
-        //printf("Starting Byte Count %ld\n", ByteCount);
+    else if (mode == 2){
+        printf("Starting Byte Count %ld\n", ByteCount);
         for(long i=0; i<=ByteCount;){
             //printf("Byte Count: %ld\n", i);
             //Generate the Byte Slice number
             if(i + range > ByteCount){
-                printf("I + %d is more than remaining bytes\n", range);
-                printf("I: %ld\n", i);
-                printf("Byte Count: %ld\n", ByteCount);
+                //printf("I + %d is more than remaining bytes\n", range);
+                //printf("I: %ld\n", i);
+                //printf("Byte Count: %ld\n", ByteCount);
                 int rest = (int)(ByteCount - i);
-                printf("Rest is %d\n", rest);
+                //printf("Rest is %d\n", rest);
                 //RandomByteSlice = (int)(ByteCount-i);
                 RandomByteSlice = rest;
                 fprintf(Key_File, "%d %d\n",RandomByteSlice, (1 + rand() % ((8 * RandomByteSlice) - 1 + 1)) );
@@ -177,6 +171,9 @@ char* Generate_Rail_Key(long ByteCount, int range, int mode){
         }
     
     }
+    else{
+        printf("Byte mode Error Exiting\n");
+    }
 
     fclose(Key_File);
     return "Key.crfc";
@@ -184,13 +181,17 @@ char* Generate_Rail_Key(long ByteCount, int range, int mode){
 }
 
 // Goes through process of encrypting each byte from file
-void EncryptBytes(FILE *input_file, FILE* output_file, int ByteMode) {
+void EncryptBytes(FILE *input_file, FILE* output_file, int ByteMode, int Slice_Size) {
+   
     const char* Key_File_Name;      //File name holding rail key numbers
     FILE *Key_File;                 //File Pointer to rail key file
     int Rail_Key_Number;            //Rail number to encrypt current bit array
    
+    long test = numBytes(input_file);
     //Generate Key from number of bytes
-    Key_File_Name = Generate_Rail_Key(numBytes(input_file), 5, 2);
+    printf("bytes: %ld\nByte Mode: %d\nSlice Size: %d\n", test, ByteMode, Slice_Size);
+    //Key_File_Name = Generate_Rail_Key(numBytes(input_file), Slice_Size, 2);
+    Key_File_Name = Generate_Rail_Key(test, Slice_Size, ByteMode);
 
     //Open Key file
     Key_File = fopen(Key_File_Name, "r");
@@ -229,11 +230,7 @@ void EncryptBytes(FILE *input_file, FILE* output_file, int ByteMode) {
             //writeByteToFile(output_file, Encrypted_Byte);
         }
     }
-
-
-
-
-
+    //multi-byte mode
     if (ByteMode == 2){
         int Random_Byte_Slice_Size;
         int *Plain_Text_Bit_Array;
