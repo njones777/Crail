@@ -4,18 +4,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
-#include <unistd.h>
 
 
 int main(int argc, char *argv[]) {
-    /*FILE *input = fopen("test_files/text_test.txt", "r");
-    FILE *output = fopen("test_files/text_encrypt_test.txt", "w");
-    EncryptBytes(input, output, 2);*/
-    /*
-    FILE *output = fopen("test_files/decrypt_text_test.txt", "w");
-    FILE *input = fopen("test_files/text_encrypt_test.txt", "r");
-    FILE *key = fopen("Key.crfc", "r");
-    DecryptBytes(input, output, key, 2);*/
     
     FILE *plain_text_file;              //Acts as input file for encryption and for decryption it acts as an output file
     FILE *encrypted_file;               //Acts as output file for encryption and for encryption it acts as the input file
@@ -27,30 +18,16 @@ int main(int argc, char *argv[]) {
     char mode='\0';                     //Encryption or Decryption
     
     if(argc < 2){
-        printf("Usage: ./crail [OPTION] ... [INPUT_FILE] [OUTPUT_FILE]\n");
-        printf("Rail fence block cipher with pseudo-random rail key generation\n");
-        printf("\nMandatory Requirements\n");
-        printf(" -i, --input\t\t\t specifies the input file for encryption or decryption\n");
-        printf(" -o, --output\t\t\t specifies the output file of the resulting encryption or decryption\n");
-        printf(" -k, --keyfile\t\t\t specifies key file for decryption, and can also optionally be used to specify key file name to output from encryption\n\n");
-        printf(" -s, --slice\t\t\t Specify byte slice size, Must be less than total number of bytes for input file, Default is 1\n");
-    }
+        menu();
+        }
     
     for (int i=1; i<argc; i++){
         //Check for help menu option(s)
         if(strcmp(argv[i], "help")==0 || strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help")==0){
-            printf("Usage: ./crail [OPTION] ... [INPUT_FILE] [OUTPUT_FILE]\n");
-            printf("Rail fence block cipher with pseudo-random rail key generation\n");
-            printf("\nMandatory Requirements\n");
-            printf(" -i, --input\t\t\t specifies the input file for encryption or decryption\n");
-            printf(" -o, --output\t\t\t specifies the outputf file of the resulting encryption or decryption\n");
-            printf(" -k, --keyfile\t\t\t specifies key file for decryption, and can also optionally be used to specify key file name to output from encryption\n\n");
-            printf(" -s, --slice\t\t\t Specify byte slice size, Must be less than total number of bytes for input file, Default is 1\n");
-
-            break;
+            menu();
+            exit(0);
         }
         //Check Decrypt or Encrypt mode
-        //if (mode == NULL && (strcmp(argv[i], "-d") == 0 || strcmp(argv[i], "--decrypt") ==0 || strcmp(argv[i], "e") == 0 || strcmp(argv[i], "--encrypt")==0)){
         if (mode == '\0') {
             if (strcmp(argv[i], "e") == 0) {
                 mode = 'e';
@@ -131,11 +108,28 @@ int main(int argc, char *argv[]) {
             return 1;
         }
     }
-        
         //Open provided Files
         if(mode == 'd'){
+            //Verification Before decryption
             char input[10];
-            printf("Decrypting %s into %s using key file %s with a slice size of %d\n", encrypted_file_name, plain_text_file_name, Key_File_name, slice_size);
+
+            //Check if user wants slice mode enabled
+            printf("Enable slice mode (Y/N):");
+            fgets(input, sizeof(input), stdin);
+
+            for(int i =0; input[i]; i++){
+                input[i] = tolower(input[i]);
+            }
+
+            //Exit if unrecognized command was given for slice mode
+            if (strcmp(input, "y\n") == 0 || strcmp(input, "yes\n")==0 || strcmp(input, "Y\n")==0){slice_size=2;}
+            else if (strcmp(input, "n\n") == 0 || strcmp(input, "no\n") == 0){slice_size=1;}
+            else {printf("Invalid slice mode set\nExiting\n");exit(0);}
+
+            memset(input, '\0', sizeof(input));
+
+            //Final verification before decryption process
+            printf("Decrypting %s into %s using key file %s", encrypted_file_name, plain_text_file_name, Key_File_name);
             printf("Do you want to proceed (Y/N):");
             fgets(input, sizeof(input), stdin);
 
@@ -147,7 +141,6 @@ int main(int argc, char *argv[]) {
             if (strcmp(input, "y\n") == 0 || strcmp(input, "yes\n")==0 || strcmp(input, "Y\n")==0){printf("Proceeding...\n");}
             else if (strcmp(input, "n\n") == 0 || strcmp(input, "no\n") == 0){printf("Exiting...\n"); exit(0);}
             else {printf("Invalid confirmation input, Exiting...\n");exit(0);}
-
 
             //Open encryped/input file in read binary mode 
             encrypted_file = fopen(encrypted_file_name, "rb");
@@ -172,7 +165,6 @@ int main(int argc, char *argv[]) {
             fclose(encrypted_file); fclose(plain_text_file); fclose(Key_File);
  
             return 0;
-
         }
 
         if (mode == 'e'){
@@ -207,8 +199,7 @@ int main(int argc, char *argv[]) {
 
             //Close Open Files
             fclose(encrypted_file); fclose(plain_text_file);
-        }
-              
+        }        
     return 0;
 }
 

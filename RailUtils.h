@@ -5,9 +5,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <unistd.h>
 
-// Trouble Shooting Print Functions
+// Trouble shooting print function
 void printArray(int *array, int size) {
     for (int i = 0; i < size; i++) {
         printf("%d ", *(array + i));
@@ -15,6 +14,7 @@ void printArray(int *array, int size) {
     printf("\n");
 }
 
+// Trouble shooting double print funcition to compare encrypted and decrypted byte(s)
 void printDualArray(int *array1, int *array2, int size){
     int i=0;
     printf("Original Array:\n");
@@ -26,6 +26,16 @@ void printDualArray(int *array1, int *array2, int size){
         printf("%d ", *(array2 +i));
     }
     printf("\n\n");
+}
+
+void menu(){
+        printf("Usage: ./crail [OPTION] ... [INPUT_FILE] [OUTPUT_FILE]\n");
+        printf("Rail fence block cipher with pseudo-random rail key generation\n");
+        printf(" -i, --input\t\t\t specifies the input file for encryption or decryption\n");
+        printf(" -o, --output\t\t\t specifies the output file of the resulting encryption or decryption\n");
+        printf(" -k, --keyfile\t\t\t specifies key file for decryption, and can also optionally be used to specify key file name to output from encryption\n");
+        printf(" -s, --slice\t\t\t specify byte slice size, Must be less than total number of bytes for input file, Default is 1\n\t\t\t\t Only set for encryption, for decryption specify in prompt if slice mode was used for encryption\n");
+    
 }
 
 //byte to bit array (expects in hex format for the byte)
@@ -45,9 +55,9 @@ char bitArrayToByte(int *bitArray, int bitsize) {
 }
 
 char *multiBitArrayToByte(int *bitArray, int bitsize){
-    char byte = 0;
+    char *byte = (char *)malloc(sizeof(char));
     for (int i = 0; i < bitsize; i++) {
-        byte |= (bitArray[i] & 1) << i;
+        *byte |= (bitArray[i] & 1) << i;
     }
     return byte;
 }
@@ -76,7 +86,6 @@ char* bitArrayToByteArray(int *bitArray, int bitsize) {
             }
         }
     }
-
     return byteArray;
 }
 
@@ -156,14 +165,14 @@ char* Generate_Rail_Key(long ByteCount, int range, int mode){
                 //printf("Rest is %d\n", rest);
                 //RandomByteSlice = (int)(ByteCount-i);
                 RandomByteSlice = rest;
-                fprintf(Key_File, "%d %d\n",RandomByteSlice, (1 + rand() % ((8 * RandomByteSlice) - 1 + 1)) );
+                fprintf(Key_File, "%d %d\n",RandomByteSlice, (1 + rand() % ((2 * RandomByteSlice) - 1 + 1)) );
                 break;
 
             }
             else{RandomByteSlice = (1 + rand() % (range - 1 + 1));}
             //Format (Byte count, Rail Number )
             //Has the upper bound of the Rail number as the number of bits within the random number of bytes
-            fprintf(Key_File, "%d %d\n",RandomByteSlice, (1 + rand() % ((8 * RandomByteSlice) - 1 + 1)) );
+            fprintf(Key_File, "%d %d\n",RandomByteSlice, (2 + rand() % ((2 * RandomByteSlice) - 1)) );
             i+=RandomByteSlice;
             if (ByteCount == i){
                 printf("They are Equal\n See:\ni: %ld\nByte count: %ld\n", i, ByteCount);
@@ -182,9 +191,8 @@ char* Generate_Rail_Key(long ByteCount, int range, int mode){
 
 // Goes through process of encrypting each byte from file
 void EncryptBytes(FILE *input_file, FILE* output_file, int ByteMode, int Slice_Size) {
-   
-    const char* Key_File_Name;      //File name holding rail key numbers
-    FILE *Key_File;                 //File Pointer to rail key file
+    const char* Key_File_Name;      //File name holding encryption keys
+    FILE *Key_File;                 //Encryption key file
     int Rail_Key_Number;            //Rail number to encrypt current bit array
    
     long test = numBytes(input_file);
@@ -203,8 +211,7 @@ void EncryptBytes(FILE *input_file, FILE* output_file, int ByteMode, int Slice_S
         int Plain_Text_Bit_Array[8];    //Plain text bits
         int Encrypted_Bit_Array[8];     //Encrypted bits
         
-        
-        //Loop through input file to encrypt 
+        //Loop plain text file encrypting the bytes until we hit the end of the file
         while(1){
 
             //Grab current plain text byte
@@ -232,58 +239,55 @@ void EncryptBytes(FILE *input_file, FILE* output_file, int ByteMode, int Slice_S
     }
     //multi-byte mode
     if (ByteMode == 2){
-        int Random_Byte_Slice_Size;
-        int *Plain_Text_Bit_Array;
-        int *Encrypted_Bit_Array;
-        char *Plain_Text_Bytes;
-        char *Encrypted_Bytes;
-        //int Bcount=0;                 //Byte counter variable for trouble shooting
-        
-        
-        //Loop through input file to encrypt 
-        while(fscanf(Key_File, "%d %d",&Random_Byte_Slice_Size, &Rail_Key_Number) == 2){
-            //Byte counter for trouble shooting and testing purposes
-            //Bcount+=Random_Byte_Slice_Size; 
-
+            int Random_Byte_Slice_Size;             //Numbers of bytes to encrypt at once
+            int *Plain_Text_Bit_Array;              //Plain text bits
+            int *Encrypted_Bit_Array;               //Encrypted  bits to be writen to file
+            char *Plain_Text_Bytes;                 //Plain text Bytes
+            char *Encrypted_Bytes;                  //Encrypted bytes to be written to file
             
-            Plain_Text_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
-            Encrypted_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
-            if (Plain_Text_Bytes == NULL || Encrypted_Bytes == NULL){
-                perror("Byte memory allocation failed");
-                break;
+            //Loop through key file to get encryption parameters 
+            while(fscanf(Key_File, "%d %d",&Random_Byte_Slice_Size, &Rail_Key_Number) == 2){
+
+                //Allocate memory for plain text and encrypted bytes
+                Plain_Text_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
+                Encrypted_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
+
+                //Memory allocation failure
+                if (Plain_Text_Bytes == NULL || Encrypted_Bytes == NULL){
+                    perror("Byte memory allocation failed");
+                    break;
+                }
+
+                size_t bytesRead = fread(Plain_Text_Bytes, sizeof(char), Random_Byte_Slice_Size, input_file);
+                if (bytesRead != Random_Byte_Slice_Size){
+                    perror("Error reading input file");
+                    free(Plain_Text_Bytes);
+                    break;
+                }
+
+                //Allocate bit arrays based on number of bytes read from file
+                Plain_Text_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
+                Encrypted_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
+
+                // convert the bytes to a bit array
+                bytesToBitArray(Plain_Text_Bytes, Random_Byte_Slice_Size, Plain_Text_Bit_Array, (Random_Byte_Slice_Size * 8));
+
+                //Encrypt bit array
+                rfc(Plain_Text_Bit_Array, (Random_Byte_Slice_Size * 8), Rail_Key_Number, Encrypted_Bit_Array);
+
+                //Convert and write encrypted byte to array
+                Encrypted_Bytes = bitArrayToByteArray(Encrypted_Bit_Array, (Random_Byte_Slice_Size * 8));
+                for(int i=0; i < Random_Byte_Slice_Size; i++){
+                    fputc(Encrypted_Bytes[i], output_file);
+                    //fputc(Plain_Text_Bytes[i], output_file);
+                }
+                
+                //Free allocated memory
+                free(Plain_Text_Bytes); free(Encrypted_Bytes);
+                free(Plain_Text_Bit_Array); free(Encrypted_Bit_Array);
             }
-
-            size_t bytesRead = fread(Plain_Text_Bytes, sizeof(char), Random_Byte_Slice_Size, input_file);
-            if (bytesRead != Random_Byte_Slice_Size){
-                perror("Error reading input file");
-                free(Plain_Text_Bytes);
-                break;
-            }
-
-            //Allocate bit arrays based on number of bytes read from file
-            Plain_Text_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
-            Encrypted_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
-
-            // convert the bytes to a bit array
-            bytesToBitArray(Plain_Text_Bytes, Random_Byte_Slice_Size, Plain_Text_Bit_Array, (Random_Byte_Slice_Size * 8));
-
-            //Encrypt bit array
-            rfc(Plain_Text_Bit_Array, (Random_Byte_Slice_Size * 8), Rail_Key_Number, Encrypted_Bit_Array);
-
-            //Convert and write encrypted byte to array
-            Encrypted_Bytes = bitArrayToByteArray(Encrypted_Bit_Array, (Random_Byte_Slice_Size * 8));
-            for(int i=0; i < Random_Byte_Slice_Size; i++){
-                fputc(Encrypted_Bytes[i], output_file);
-                //fputc(Plain_Text_Bytes[i], output_file);
-            }
-            
-            free(Plain_Text_Bytes); free(Encrypted_Bytes);
-            free(Plain_Text_Bit_Array); free(Encrypted_Bit_Array);
-            //printf("Writing %d Bytes, %d Bytes written\n", Random_Byte_Slice_Size, Bcount);
-        }
     }
-    else{printf("Invalid Byte Mode\n"); exit(1);}
-
+    else{printf("Invalid byte mode within encryption method\n"); exit(1);}
 }
 
 //Decrypt encrypted file
@@ -322,52 +326,52 @@ void DecryptBytes(FILE *input_file, FILE* output_file, FILE* Key_File, int mode)
         }
     }
     if(mode == 2){
-        int Random_Byte_Slice_Size;
-        int *Plain_Text_Bit_Array;
-        int *Encrypted_Bit_Array;
-        char *Plain_Text_Bytes;
-        char *Encrypted_Bytes;
-        size_t bytesRead;
+            int Random_Byte_Slice_Size;
+            int *Plain_Text_Bit_Array;
+            int *Encrypted_Bit_Array;
+            char *Plain_Text_Bytes;
+            char *Encrypted_Bytes;
+            size_t bytesRead;
 
 
-        while(fscanf(Key_File, "%d %d",&Random_Byte_Slice_Size, &Rail_Key_Number) == 2){
-            
-            //Allocate Plain and Encrypte byte arrays size of the current Byte slice
-            Plain_Text_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
-            Encrypted_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
-            if (Plain_Text_Bytes == NULL || Encrypted_Bytes == NULL){
-                perror("Byte memory allocation failed");
-                break;
+            while(fscanf(Key_File, "%d %d",&Random_Byte_Slice_Size, &Rail_Key_Number) == 2){
+                
+                //Allocate Plain and Encrypte byte arrays size of the current Byte slice
+                Plain_Text_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
+                Encrypted_Bytes = (char *)malloc(Random_Byte_Slice_Size * sizeof(char));
+                if (Plain_Text_Bytes == NULL || Encrypted_Bytes == NULL){
+                    perror("Byte memory allocation failed");
+                    break;
+                }
+                //Read X amount of bytes from the encrypted file
+                //With X being the Byte slice size
+                bytesRead = fread(Encrypted_Bytes, sizeof(char), Random_Byte_Slice_Size, input_file);
+                if (bytesRead != Random_Byte_Slice_Size){
+                    perror("Error reading input file");
+                    free(Plain_Text_Bytes);
+                    break;
+                }
+
+                //Allocate bit arrays based on number of bytes read from file
+                Plain_Text_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
+                Encrypted_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
+
+                // convert the bytes to a bit array
+                bytesToBitArray(Encrypted_Bytes, Random_Byte_Slice_Size, Encrypted_Bit_Array, (Random_Byte_Slice_Size * 8));
+
+                //Decrypt bit array
+                rfc_decrypt(Encrypted_Bit_Array, (Random_Byte_Slice_Size * 8), Rail_Key_Number, Plain_Text_Bit_Array);
+
+                //Convert and write encrypted byte to array
+                Plain_Text_Bytes = bitArrayToByteArray(Plain_Text_Bit_Array, (Random_Byte_Slice_Size * 8));
+                for(int i=0; i < Random_Byte_Slice_Size; i++){
+                    fputc(Plain_Text_Bytes[i], output_file);
+                }
+                    //Free dynamically allocated blocks of memeory
+                    free(Plain_Text_Bytes); free(Encrypted_Bytes);
+                    free(Plain_Text_Bit_Array); free(Encrypted_Bit_Array);
             }
-            //Read X amount of bytes from the encrypted file
-            //With X being the Byte slice size
-            bytesRead = fread(Encrypted_Bytes, sizeof(char), Random_Byte_Slice_Size, input_file);
-            if (bytesRead != Random_Byte_Slice_Size){
-                perror("Error reading input file");
-                free(Plain_Text_Bytes);
-                break;
-            }
-
-            //Allocate bit arrays based on number of bytes read from file
-            Plain_Text_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
-            Encrypted_Bit_Array = (int *)malloc((Random_Byte_Slice_Size*8) * sizeof(int));
-
-            // convert the bytes to a bit array
-            bytesToBitArray(Encrypted_Bytes, Random_Byte_Slice_Size, Encrypted_Bit_Array, (Random_Byte_Slice_Size * 8));
-
-            //Decrypt bit array
-            rfc_decrypt(Encrypted_Bit_Array, (Random_Byte_Slice_Size * 8), Rail_Key_Number, Plain_Text_Bit_Array);
-
-             //Convert and write encrypted byte to array
-            Plain_Text_Bytes = bitArrayToByteArray(Plain_Text_Bit_Array, (Random_Byte_Slice_Size * 8));
-            for(int i=0; i < Random_Byte_Slice_Size; i++){
-                fputc(Plain_Text_Bytes[i], output_file);
-            }
-                //Free dynamically allocated blocks of memeory
-                free(Plain_Text_Bytes); free(Encrypted_Bytes);
-                free(Plain_Text_Bit_Array); free(Encrypted_Bit_Array);
-        }
     }
-    else{printf("Invalid Byte Mode\n"); exit(1);}  
+    else{printf("Invalid byte mode within decryption method\n"); exit(1);}  
 }
 #endif
